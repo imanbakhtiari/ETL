@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ﻡﺪﯾﺮﯿﺗ ﻪﻤﮔﺎﻣ<200c>ﺳﺍﺰﯾ ﭖﺎﯿﮔﺎﻫ ﺩﺍﺪﻫ</title>
+    <style>
+        body {
+            font-family: 'Tahoma', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            max-width: 800px;
+            margin: 50px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        h1 {
+            font-size: 26px;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #28a745;
+            border: none;
+            color: #fff;
+            padding: 12px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #218838;
+            transform: scale(1.05);
+        }
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 8px solid #007bff;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .success {
+            color: #28a745;
+        }
+        .message-container {
+            margin-top: 20px;
+        }
+        .interval-section {
+            margin-top: 30px;
+        }
+        label, input, button {
+            font-size: 18px;
+        }
+    </style>
+    <script>
+        async function syncDatabases() {
+            document.getElementById('spinner').style.display = 'block';
+            document.getElementById('sync-button').disabled = true;
+            
+            try {
+                const response = await fetch('{{ url_for("sync") }}', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                alert(result.message);
+
+                // Poll for status
+                pollStatus();
+            } catch (error) {
+                alert('ﺦﻃﺍ ﺩﺭ ﺏﺮﻗﺭﺍﺮﯾ ﺍﺮﺘﺑﺎﻃ ﺏﺍ ﺱﺭﻭﺭ.');
+            } finally {
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('sync-button').disabled = false;
+            }
+        }
+
+        async function pollStatus() {
+            const statusInterval = setInterval(async () => {
+                const response = await fetch('/status');
+                const status = await response.json();
+
+                if (!status.running) {
+                    clearInterval(statusInterval);
+                    alert(status.message);
+                }
+            }, 2000); // Poll every 2 seconds
+        }
+
+        async function updateInterval() {
+            const interval = document.getElementById('interval').value;
+            try {
+                const response = await fetch('/set_interval', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ interval: parseInt(interval) })
+                });
+                
+                const result = await response.json();
+                alert(result.message);
+            } catch (error) {
+                alert('ﺦﻃﺍ ﺩﺭ ﺏﺮﻗﺭﺍﺮﯾ ﺍﺮﺘﺑﺎﻃ ﺏﺍ ﺱﺭﻭﺭ.');
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>ﻡﺪﯾﺮﯿﺗ ﻪﻤﮔﺎﻣ<200c>ﺳﺍﺰﯾ ﭖﺎﯿﮔﺎﻫ ﺩﺍﺪﻫ</h1>
+        <button id="sync-button" onclick="syncDatabases()">ﺵﺭﻮﻋ ﻪﻤﮔﺎﻣ<200c>ﺳﺍﺰﯾ</button>
+        <div id="spinner" class="spinner"></div>
+        <div class="message-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <ul>
+                        {% for category, message in messages %}
+                            <li class="{{ category }}">{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
+        </div>
+        <div class="interval-section">
+            <label for="interval">ﺰﻣﺎﻧ<200c>ﺒﻧﺪﯾ ﺝﺪﯾﺩ (ﺙﺎﻨﯿﻫ):</label>
+            <input type="number" id="interval" name="interval" min="1" value="3600">
+            <button type="button" onclick="updateInterval()">ﺏﺭﻭﺯﺮﺳﺎﻨﯾ ﺰﻣﺎﻧ<200c>ﺒﻧﺪﯾ</button>
+        </div>
+    </div>
+</body>
+</html>
+
